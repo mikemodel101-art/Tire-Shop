@@ -338,6 +338,59 @@ export function sortJobs(jobs: Job[], sort: "time" | "status" | "tech") {
   return copy;
 }
 
+export type ExpenseRange = "today" | "week" | "month" | "all";
+
+export function inExpenseRange(date: string, today: string, range: ExpenseRange) {
+  if (range === "all") return true;
+  if (range === "today") return date === today;
+  const diff = daysBetween(date, today);
+  if (diff < 0) return false;
+  if (range === "week") return diff < 7;
+  return diff < 31;
+}
+
+export function expenseSummary(state: ShopState, range: ExpenseRange = "month") {
+  const list = (state.expenses ?? []).filter((x) => inExpenseRange(x.date, state.anchorDay, range));
+  const income = list.filter((x) => x.type === "income").reduce((s, x) => s + x.amount, 0);
+  const expense = list.filter((x) => x.type === "expense").reduce((s, x) => s + x.amount, 0);
+  const byCategory = (type: "income" | "expense") => {
+    const map = new Map<string, number>();
+    for (const x of list.filter((y) => y.type === type)) map.set(x.category, (map.get(x.category) ?? 0) + x.amount);
+    return [...map.entries()].map(([label, value]) => ({ label, value: Math.round(value) })).sort((a, b) => b.value - a.value);
+  };
+  const byMethod = (() => {
+    const map = new Map<string, number>();
+    for (const x of list) map.set(x.method, (map.get(x.method) ?? 0) + (x.type === "income" ? x.amount : -x.amount));
+    return [...map.entries()];
+  })();
+  void byMethod;
+  return {
+    income: Math.round(income),
+    expense: Math.round(expense),
+    net: Math.round(income - expense),
+    count: list.length,
+    incomeByCat: byCategory("income"),
+    expenseByCat: byCategory("expense"),
+    list: [...list].sort((a, b) => b.at.localeCompare(a.at)),
+  };
+}
+
+export function expenseDaily(state: ShopState, days = 14) {
+  const out: { label: string; date: string; income: number; expense: number }[] = [];
+  for (let d = days - 1; d >= 0; d--) {
+    const dt = new Date(parseLocal(state.anchorDay).getTime() - d * 86400000);
+    const iso = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+    const dayList = (state.expenses ?? []).filter((x) => x.date === iso);
+    out.push({
+      label: dt.toLocaleDateString("en-US", { month: "numeric", day: "numeric" }),
+      date: iso,
+      income: Math.round(dayList.filter((x) => x.type === "income").reduce((s, x) => s + x.amount, 0)),
+      expense: Math.round(dayList.filter((x) => x.type === "expense").reduce((s, x) => s + x.amount, 0)),
+    });
+  }
+  return out;
+}
+
 export function bundleForReport(state: ShopState, code: string): JobBundle | null {
   const r = state.reports.find((x) => x.code === code);
   if (!r) return null;

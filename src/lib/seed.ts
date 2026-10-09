@@ -8,6 +8,7 @@ import {
   type Corner,
   type Customer,
   type Estimate,
+  type ExpenseTransaction,
   type Grade,
   type Inspection,
   type Job,
@@ -21,7 +22,7 @@ import {
 } from "./data";
 import { addDays, blankInspection } from "./utils";
 
-export const STORE_VERSION = 3;
+export const STORE_VERSION = 4;
 
 const ORDER: JobStatus[] = [
   "waiting",
@@ -354,10 +355,69 @@ export function createSeed(today: string): ShopState {
     { id: "m10", customerId: "c8", jobId: "J-2058", direction: "out", kind: "text", body: "Hi Linda, your Wrangler is ready. Your winter tires are stored with us on rack B-12.", at: at(0, "09:25"), by: "jen" },
   ];
 
+  // ---------- Expenses: shop money in (income) vs money out (expense) ----------
+  let expN = 0;
+  const exp = (
+    offset: number,
+    hhmm: string,
+    type: ExpenseTransaction["type"],
+    category: string,
+    description: string,
+    amount: number,
+    method: ExpenseTransaction["method"],
+    by: string,
+    jobId?: string,
+  ): ExpenseTransaction => {
+    expN += 1;
+    return { id: `x${expN}`, date: day(offset), at: at(offset, hhmm), type, category, description, amount, method, by, jobId };
+  };
+
+  const expenses: ExpenseTransaction[] = [
+    // Today — income from completed / approved work
+    exp(0, "08:45", "income", "Labor", "J-2057 Altima puncture repair — labor", 95, "card", "jen", "J-2057"),
+    exp(0, "08:46", "income", "Parts", "J-2057 plug-patch kit + supplies", 28, "card", "jen", "J-2057"),
+    exp(0, "09:22", "income", "Labor", "J-2058 Wrangler seasonal swap — labor", 120, "card", "jen", "J-2058"),
+    exp(0, "09:22", "income", "Other income", "J-2058 winter tire storage (season)", 60, "card", "jen", "J-2058"),
+    exp(0, "09:30", "expense", "Supplies", "Shop supplies restock (valves, weights)", 86, "card", "jen"),
+    // Yesterday
+    exp(-1, "10:15", "income", "Tires", "4× all-season tires — walk-in sale", 720, "card", "jen"),
+    exp(-1, "10:15", "income", "Labor", "Mount + balance (4)", 100, "card", "jen"),
+    exp(-1, "11:40", "income", "Alignment", "Four-wheel alignment ALG 89", 89, "cash", "jen"),
+    exp(-1, "14:05", "expense", "Tire inventory", "Distributor invoice — 8 tires", 1180, "bank", "mike"),
+    exp(-1, "16:20", "income", "Inspection fee", "State safety inspection", 35, "cash", "jen"),
+    // -2 days
+    exp(-2, "09:05", "income", "Labor", "Brake pads front — labor", 180, "card", "jen"),
+    exp(-2, "09:05", "income", "Parts", "Brake pads + rotors front", 260, "card", "jen"),
+    exp(-2, "12:30", "expense", "Parts purchase", "Brake parts — NAPA", 310, "card", "mike"),
+    exp(-2, "13:10", "expense", "Utilities", "National Grid — electric", 342, "bank", "mike"),
+    // -3 days
+    exp(-3, "10:00", "income", "TPMS", "TPMS sensor + relearn", 95, "card", "jen"),
+    exp(-3, "11:30", "income", "Labor", "Tire rotation + balance", 75, "cash", "jen"),
+    exp(-3, "15:00", "expense", "Equipment", "Torque wrench calibration", 120, "card", "mike"),
+    // -5 days (payday + rent week)
+    exp(-5, "09:00", "expense", "Salaries", "Weekly payroll — techs + advisor", 3450, "bank", "mike"),
+    exp(-5, "10:30", "income", "Tires", "2× winter tires + install", 410, "card", "jen"),
+    exp(-5, "14:00", "income", "Alignment", "Truck alignment ALG 120", 120, "card", "jen"),
+    // -6 days
+    exp(-6, "09:15", "expense", "Rent", "Shop rent — monthly", 4200, "bank", "mike"),
+    exp(-6, "11:00", "income", "Labor", "Suspension work — outer tie rod", 230, "card", "jen"),
+    exp(-6, "11:00", "income", "Parts", "Outer tie rod part", 75, "card", "jen"),
+    // -8 days
+    exp(-8, "10:20", "expense", "Insurance", "Garage liability — monthly", 685, "bank", "mike"),
+    exp(-8, "13:45", "income", "Labor", "Diagnostic labor (1 hr)", 120, "card", "jen"),
+    exp(-8, "15:30", "expense", "Marketing", "Google ads — monthly", 250, "card", "mike"),
+    // -9 days
+    exp(-9, "09:30", "income", "Tires", "4× tires + alignment bundle", 899, "card", "jen"),
+    exp(-9, "16:00", "expense", "Supplies", "Cleaning + office supplies", 94, "cash", "jen"),
+    // -12 days
+    exp(-12, "09:00", "expense", "Salaries", "Weekly payroll — techs + advisor", 3450, "bank", "mike"),
+    exp(-12, "11:20", "income", "Parts", "Battery + install", 210, "card", "jen"),
+  ];
+
   return {
     version: STORE_VERSION,
     anchorDay: today,
-    seq: 500,
+    seq: 600,
     settings: { ...DEFAULT_SETTINGS, alignmentPackages: DEFAULT_SETTINGS.alignmentPackages.map((p) => ({ ...p })) },
     team: TEAM.map((m) => ({ ...m })),
     customers,
@@ -368,5 +428,6 @@ export function createSeed(today: string): ShopState {
     reports,
     estimates,
     messages,
+    expenses,
   };
 }

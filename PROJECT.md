@@ -72,6 +72,7 @@ Success metric: a newcomer completes check-in → inspection → report → esti
  /vehicles                  Fleet: health dots, due badges, make filter, sort
  /estimates                 Pipeline funnel + aging + ready-to-estimate shortcuts
  /estimates/[id]            Builder: templates, discount/deposit, per-line approve, text
+ /expenses                  Money tracker: income vs expenses, net, cash-flow bars, categories, CSV
  /messages                  Threads: every text logged, quick replies, SMS deep-links
  /reports                   Report inbox: ready/sent, preview, copy link, funnel
  /guide                     Newcomer guide (see §3)
@@ -105,7 +106,8 @@ ShopState
 ├── reports: Report[code, jobId, createdAt, sentAt?]
 ├── estimates: Estimate[id, jobId, createdAt, status, sentAt?, approvedAt?, lines[]]
 │     lines: [section, description, priority, parts, labor, decision]
-└── messages: Message[id, customerId, jobId?, out|in, body, at, kind, link?, by?]
+├── messages: Message[id, customerId, jobId?, out|in, body, at, kind, link?, by?]
+└── expenses: ExpenseTransaction[id, date, at, income|expense, category, description, amount, method, jobId?, by]
 ```
 
 Key invariants:
@@ -135,7 +137,9 @@ Price book (`buildEstimateLines`): 4-tire logic (3→4), pads vs pads+rotors per
 
 | Area | Added |
 |---|---|
-| **Dashboard** | Revenue cards (approved/awaiting/avg), 7-day trend bars, shop-load donut, live activity feed, prioritized alerts (red-not-contacted, stale estimates), tech leaderboard, quick actions, first-run banner + checklist |
+| **Dashboard** | Revenue cards (approved/awaiting/avg), 30-day expense snapshot, 7-day trend bars, shop-load donut, live activity feed, prioritized alerts (red-not-contacted, stale estimates), tech leaderboard, quick actions, first-run banner + checklist; workflow strip = responsive grid on desktop + swipe carousel with arrows/dots on phones |
+| **Expenses** | Income-in vs expenses-out with net + margin, 14-day dual cash-flow bars, category donuts, range/type/category/search filters, add/edit/delete modal with job linking, CSV export |
+| **Jobs tabs** | Responsive segmented tabs (short labels on phones, hints on desktop, live counts, helper footer) + wrap-safe cards (truncated time/tech, smaller thumbs on phones) |
 | **Today's Jobs** | Timeline view, tech filter, urgent-only (red findings), sort (time/status/tech), wait-time labels, per-card inspection %, media count, estimate badge, unassigned callouts |
 | **Inspections** | Queue stats (avg time, red/yellow, completion %), search, tech + red-only filters, CSV export; wizard gains previous-visit tread comparison, note templates, validation warnings, live “customer will see” preview, newcomer coach marks |
 | **Estimates** | Pipeline funnel, stale/follow-up flags, search + sort; detail gains line templates, duplicate line, category picker, discount %, deposit → balance, validity, urgency subtotals, decision progress, shop-only notes |

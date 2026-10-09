@@ -32,10 +32,10 @@ import {
   type JobGroup,
 } from "@/lib/utils";
 
-const TABS: { id: JobGroup; label: string; active: string; count: string }[] = [
-  { id: "waiting", label: "Waiting", active: "border-amber-500 text-slate-950", count: "bg-amber-400 text-slate-950" },
-  { id: "progress", label: "In Progress", active: "border-blue-600 text-slate-950", count: "bg-blue-600 text-white" },
-  { id: "completed", label: "Completed", active: "border-emerald-600 text-slate-950", count: "bg-emerald-600 text-white" },
+const TABS: { id: JobGroup; label: string; short: string; hint: string; active: string; activeBg: string; count: string }[] = [
+  { id: "waiting", label: "Waiting", short: "Waiting", hint: "Needs a tech", active: "border-amber-500 text-slate-950", activeBg: "bg-amber-50", count: "bg-amber-400 text-slate-950" },
+  { id: "progress", label: "In Progress", short: "Active", hint: "Being worked", active: "border-blue-600 text-slate-950", activeBg: "bg-blue-50", count: "bg-blue-600 text-white" },
+  { id: "completed", label: "Completed", short: "Done", hint: "Ready / picked up", active: "border-emerald-600 text-slate-950", activeBg: "bg-emerald-50", count: "bg-emerald-600 text-white" },
 ];
 
 type ViewMode = "cards" | "timeline";
@@ -122,24 +122,39 @@ export default function TodaysJobsPage() {
       </div>
 
       <div className="anim-fade-up rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-slate-200">
-        <div className="grid grid-cols-3">
+        <div role="tablist" aria-label="Filter jobs by status" className="grid grid-cols-3 gap-1">
           {TABS.map((t) => {
             const active = tab === t.id;
             return (
               <button
                 key={t.id}
                 type="button"
+                role="tab"
+                aria-selected={active}
                 onClick={() => setTab(t.id)}
-                className={`flex items-center justify-center gap-2 border-b-[3px] px-2 py-3 text-sm font-semibold transition ${active ? t.active : "border-transparent text-slate-500 hover:text-slate-800"}`}
+                className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl border-b-[3px] px-1 py-2.5 transition sm:flex-row sm:gap-2 sm:px-3 sm:py-3 ${
+                  active ? `${t.active} ${t.activeBg}` : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                }`}
               >
-                {t.label}
-                <span className={`min-w-6 rounded-full px-1.5 text-xs font-bold leading-5 ${active ? t.count : "bg-slate-100 text-slate-600"}`}>
+                <span className="min-w-0 truncate text-xs font-bold sm:text-sm">
+                  <span className="sm:hidden">{t.short}</span>
+                  <span className="hidden sm:inline">{t.label}</span>
+                </span>
+                <span
+                  className={`shrink-0 rounded-full px-1.5 text-[11px] font-black leading-5 sm:text-xs ${active ? t.count : "bg-slate-100 text-slate-600"}`}
+                >
                   {counts[t.id]}
+                </span>
+                <span className={`hidden truncate text-[11px] font-medium lg:inline ${active ? "text-slate-600" : "text-slate-400"}`}>
+                  {t.hint}
                 </span>
               </button>
             );
           })}
         </div>
+        <p className="border-t border-slate-100 px-3 py-2 text-center text-[11px] font-medium text-slate-400 sm:text-xs">
+          {counts[tab]} vehicle{counts[tab] === 1 ? "" : "s"} · {tab === "waiting" ? "tap a card, then Accept Job" : tab === "progress" ? "inspection → report → approval" : "finished today"}
+        </p>
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
@@ -241,7 +256,7 @@ function JobCard({ job, index }: { job: Job; index: number }) {
           <Flame className="size-3" /> Urgent
         </span>
       )}
-      <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-slate-100 sm:h-24 sm:w-32">
+      <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-xl bg-slate-100 sm:h-24 sm:w-32">
         <img src={vehiclePhoto(vehicle)} alt={vehicleLabel(vehicle)} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
         {media > 0 && (
           <span className="absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur">
@@ -251,11 +266,13 @@ function JobCard({ job, index }: { job: Job; index: number }) {
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="truncate font-bold text-slate-950">{vehicleLabel(vehicle)}</p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold text-slate-950 sm:text-base">{vehicleLabel(vehicle)}</p>
             <PlateBadge plate={vehicle.plate} className="mt-1" />
           </div>
-          <JobStatusBadge status={job.status} detail />
+          <span className="shrink-0">
+            <JobStatusBadge status={job.status} detail />
+          </span>
         </div>
         <p className="mt-1.5 truncate text-sm font-medium text-slate-800">{customer.name}</p>
         <p className="truncate text-sm text-slate-500">{job.complaint}</p>
@@ -271,19 +288,20 @@ function JobCard({ job, index }: { job: Job; index: number }) {
           )}
           {rep?.sentAt && <CheckCircle2 className="size-3.5 text-emerald-500" />}
         </div>
-        <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-          <span className="flex items-center gap-1 text-xs font-medium text-slate-500">
-            <Clock className="size-3.5" /> {job.time}
-            {wait && <span className="text-slate-400">· {wait}</span>}
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pt-2">
+          <span className="flex min-w-0 items-center gap-1 truncate text-xs font-medium text-slate-500">
+            <Clock className="size-3.5 shrink-0" />
+            <span className="shrink-0">{job.time}</span>
+            {wait && <span className="hidden truncate text-slate-400 min-[400px]:inline">· {wait}</span>}
           </span>
           {tech ? (
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+            <span className="flex min-w-0 items-center gap-1.5 text-xs font-semibold text-slate-700">
               <Avatar initials={tech.initials} size="sm" tone={tech.id === me.id ? "brand" : "dark"} />
-              {tech.name.split(" ")[0]}
-              {waitingForMe && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-800">Accept?</span>}
+              <span className="max-w-16 truncate sm:max-w-none">{tech.name.split(" ")[0]}</span>
+              {waitingForMe && <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-800">Accept?</span>}
             </span>
           ) : (
-            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-700 ring-1 ring-amber-200">Unassigned</span>
+            <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-700 ring-1 ring-amber-200">Unassigned</span>
           )}
         </div>
       </div>

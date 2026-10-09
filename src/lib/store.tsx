@@ -3,6 +3,7 @@
 import { createContext, useContext, useSyncExternalStore, type ReactNode } from "react";
 import type {
   Estimate,
+  ExpenseTransaction,
   Inspection,
   Job,
   JobStatus,
@@ -28,7 +29,7 @@ import {
 } from "./utils";
 
 // Demo persistence: the whole shop lives in localStorage (no database).
-const KEY = "castle-tire-demo-v3";
+const KEY = "castle-tire-demo-v4";
 
 let state: ShopState | null = null;
 const listeners = new Set<() => void>();
@@ -43,7 +44,12 @@ function load(): ShopState {
       const parsed = JSON.parse(raw) as ShopState;
       if (parsed && parsed.version === STORE_VERSION) {
         // Session-only blob URLs (videos) can't survive a reload.
-        const cleaned: ShopState = { ...parsed, media: parsed.media.filter((m) => !m.url.startsWith("blob:")) };
+        // Defensive: older saves may miss `expenses` (added in v4).
+        const cleaned: ShopState = {
+          ...parsed,
+          expenses: Array.isArray((parsed as ShopState).expenses) ? (parsed as ShopState).expenses : createSeed(parsed.anchorDay ?? today).expenses,
+          media: parsed.media.filter((m) => !m.url.startsWith("blob:")),
+        };
         if (cleaned.anchorDay !== today) {
           const diff = daysBetween(cleaned.anchorDay, today);
           return { ...shiftDates(cleaned, diff), anchorDay: today };
@@ -488,6 +494,23 @@ export function addTeamMember(name: string, role: string): Member {
   const member: Member = { id: `t${Date.now()}`, name: name.trim(), role: role.trim() || "Technician", initials: initials(name) };
   setState((s) => ({ ...s, team: [...s.team, member] }));
   return member;
+}
+
+export function addExpense(input: Omit<ExpenseTransaction, "id">): string {
+  let id = "";
+  setState((s) => {
+    id = `x${s.seq + 1}`;
+    return { ...s, seq: s.seq + 1, expenses: [{ ...input, id }, ...s.expenses] };
+  });
+  return id;
+}
+
+export function updateExpense(id: string, patch: Partial<ExpenseTransaction>) {
+  setState((s) => ({ ...s, expenses: s.expenses.map((x) => (x.id === id ? { ...x, ...patch } : x)) }));
+}
+
+export function removeExpense(id: string) {
+  setState((s) => ({ ...s, expenses: s.expenses.filter((x) => x.id !== id) }));
 }
 
 export function resetDemo() {

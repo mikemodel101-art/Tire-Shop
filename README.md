@@ -41,6 +41,7 @@ Look for **`?` tips** on every page and **coach marks** inside the inspection wi
 - **Customers** — search name/phone/plate; segments (VIP / New / Returning / At-risk); lifetime + awaiting value; open recommendations; full 360° detail (vehicles, visits, texts, media).
 - **Vehicles** — health dots from latest inspection, due-for-service badges (6 mo / 6k mi / findings), make filter, sort, quick work-order + report links.
 - **Estimates** — auto-built from findings (parts + labor + MA tax); pipeline funnel; stale follow-ups; templates; discount/deposit/balance; per-line approve; text + phone-approval logging.
+- **Expenses** — admin money tracker: income in vs expenses out, net kept, 14-day cash-flow bars, category donuts, add/edit/delete + CSV export. Dashboard shows a 30-day snapshot.
 - **Messages** — every text logged with report/estimate link cards; quick replies; SMS deep-links to the Messages app.
 - **Reports** — ready/sent inbox with send-rate, funnel to approval, oldest-unsent nudge, preview + printable sheet + copy-link.
 - **Settings** — shop profile, SMS templates (`{first} {vehicle} {total} {link}`), tread/pad thresholds, ALG labels, team, JSON/CSV export (your data, no lock-in), PWA install steps.
@@ -90,7 +91,7 @@ Phone-first bits: bottom `+` = New Vehicle anywhere; big tread/pad fields; camer
 Next.js 16 (App Router, Turbopack) · React 19 · TypeScript strict · Tailwind CSS 4 · lucide-react · Pexels stock. No UI framework, no backend vendor. See **[PROJECT.md](./PROJECT.md)** for architecture, data model, inspection math, and the production roadmap (Postgres + Drizzle, S3, Twilio, real auth).
 
 ```
-src/app/(app)/*     dashboard jobs inspections media customers vehicles estimates messages reports guide settings
+src/app/(app)/*     dashboard jobs inspections media customers vehicles estimates expenses messages reports guide settings
 src/app/r/[code]    public customer report (no login)
 src/components      brand ui analytics onboarding inspection-extras photo-capture send-report-modal …
 src/lib             data (types) · seed (dummy data) · store (actions) · utils (rules) · insights (analytics)
